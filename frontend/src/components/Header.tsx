@@ -13,7 +13,7 @@ const interviewTypes: InterviewType[] = [
 ];
 
 const Header: React.FC = () => {
-  const { interviewType, setInterviewType, downloadTranscript } = useChat();
+  const { interviewType, setInterviewType, downloadTranscript, interviewState } = useChat();
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-10 backdrop-blur-sm bg-opacity-80">
@@ -24,6 +24,7 @@ const Header: React.FC = () => {
             <select
               value={interviewType}
               onChange={(e) => setInterviewType(e.target.value as InterviewType)}
+              disabled={interviewState.sessionId !== null}
               className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-2 px-3 pr-8 rounded-md 
                         text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             >
@@ -39,14 +40,28 @@ const Header: React.FC = () => {
               </svg>
             </div>
           </div>
+          {interviewState.sessionId && !interviewState.isComplete && (
+            <div className="ml-4 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+              Questions remaining: {interviewState.questionsRemaining}
+            </div>
+          )}
+          {interviewState.isComplete && (
+            <div className="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              Interview Complete
+            </div>
+          )}
         </div>
         <button
           onClick={downloadTranscript}
-          className="text-sm flex items-center gap-1 py-2 px-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 
-                   rounded-md transition-colors duration-200"
+          disabled={!interviewState.sessionId}
+          className={`flex items-center gap-1 py-2 px-4 rounded-md transition-colors duration-200 ${
+            interviewState.isComplete 
+              ? 'bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium'
+              : 'text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+          }`}
         >
           <Download size={16} />
-          <span>Transcript</span>
+          <span>{interviewState.isComplete ? 'Download Feedback PDF' : 'Transcript'}</span>
         </button>
       </div>
     </header>

@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { InterviewResponse, Question } from '../types/interview';
-import { InterviewType } from '../types';
+import { InterviewResponse } from '../types/interview';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -53,9 +52,7 @@ export const interviewApi = {
 
     // Submit response for a question
     submitResponse: async (sessionId: number, questionId: number, responseText: string) => {
-        const res = await api.post('/interviews/submit-response/', {
-            session_id: sessionId,
-            question_id: questionId,
+        const res = await api.post(`/interviews/submit-response/${sessionId}/${questionId}/`, {
             response: responseText
         });
         return res.data;
@@ -65,6 +62,23 @@ export const interviewApi = {
     getFeedbackSummary: async (sessionId: number) => {
         const response = await api.post(`/interviews/sessions/${sessionId}/feedback/`);
         return response.data;
+    },
+
+    downloadTranscriptPDF: async (sessionId: number) => {
+        try {
+            console.log(`Requesting PDF for session ${sessionId}`);
+            
+            // Use the dedicated PDF endpoint
+            const response = await api.get(
+                `/interviews/sessions/${sessionId}/feedback/pdf/`, 
+                { responseType: 'blob' }
+            );
+            return response.data;
+            
+        } catch (error) {
+            console.error('Error downloading transcript:', error);
+            throw error;
+        }
     }
 };
 

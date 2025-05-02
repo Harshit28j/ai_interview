@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Message, InterviewType } from '../types';
 import { interviewApi } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 // First, let's define the interview state interface
 export interface InterviewState {
@@ -8,6 +9,7 @@ export interface InterviewState {
   currentQuestionId: number | null; // Update to include currentQuestionId
   currentQuestionOrder: number;
   isComplete: boolean;
+  questionsRemaining: number; // Add this field
 }
 
 // Update the ChatContextType to include interviewState
@@ -47,7 +49,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionId: null,
     currentQuestionId: null, // Initialize currentQuestionId as null
     currentQuestionOrder: 0,
-    isComplete: false
+    isComplete: false,
+    questionsRemaining: 10 // Initialize with 10 questions
   });
 
   const handleStartInterview = async () => {
@@ -59,14 +62,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const firstQuestion = response.questions[0];
       setInterviewState({
         sessionId: response.session_id,
-        currentQuestionId: firstQuestion.id, // Store the question ID
+        currentQuestionId: firstQuestion.id,
         currentQuestionOrder: firstQuestion.order,
-        isComplete: false
+        isComplete: false,
+        questionsRemaining: 9 // First question is being asked, so 9 remain
       });
 
       // Add the AI's question to the chat
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: firstQuestion.text,
         sender: 'ai',
         timestamp: new Date()
@@ -74,7 +78,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Failed to start interview:', error);
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: 'Failed to start the interview. Please try again.',
         sender: 'ai',
         timestamp: new Date()
@@ -101,7 +105,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (responseResult.is_learning_opportunity) {
         // For "don't know" or brief responses, show a more supportive message
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
+          id: generateUniqueId(),
           content: `${responseResult.feedback}\n\n${responseResult.cross_question}`,
           sender: 'ai',
           timestamp: new Date()
@@ -109,7 +113,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Wait for user's confirmation to explain
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
+          id: generateUniqueId(),
           content: "Type 'yes' if you'd like me to explain this topic, or 'next' to move to the next question.",
           sender: 'ai',
           timestamp: new Date()
@@ -117,18 +121,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (responseResult.cross_question) {
         // Regular follow-up question
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
+          id: generateUniqueId(),
           content: `${responseResult.feedback}\n\nFollow-up question:\n${responseResult.cross_question}`,
           sender: 'ai',
           timestamp: new Date()
         }]);
-      } else {
-        // ... rest of the existing logic for handling next questions ...
       }
     } catch (error) {
       console.error('Error processing response:', error);
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: 'Sorry, there was an error processing your response. Please try again.',
         sender: 'ai',
         timestamp: new Date()
@@ -152,35 +154,61 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const feedback = await interviewApi.getFeedbackSummary(interviewState.sessionId);
         setInterviewState(prev => ({ ...prev, isComplete: true }));
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          content: `Interview complete!\n\nFeedback Summary:\n${feedback.overall_feedback}`,
+          id: generateUniqueId(),
+          content: `Interview complete!\n\nFeedback Summary:\n${feedback.overall_feedback}\n\nClick the download button below to get your detailed feedback PDF.`,
           sender: 'ai',
           timestamp: new Date()
         }]);
+        toast.success('Interview completed! Please download your feedback PDF.', {
+          duration: 5000,
+          position: 'bottom-center'
+        });
       } else {
         setInterviewState(prev => ({ 
           ...prev, 
           currentQuestionId: nextQuestion.id,
-          currentQuestionOrder: nextQuestion.order
+          currentQuestionOrder: nextQuestion.order,
+          questionsRemaining: prev.questionsRemaining - 1
         }));
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
+          id: generateUniqueId(),
           content: nextQuestion.text,
           sender: 'ai',
           timestamp: new Date()
         }]);
+
+        // Check if this was the last question
+        if (interviewState.questionsRemaining === 1) {
+          const feedback = await interviewApi.getFeedbackSummary(interviewState.sessionId);
+          setInterviewState(prev => ({ ...prev, isComplete: true }));
+          setMessages(prev => [...prev, {
+            id: generateUniqueId(),
+            content: `Interview complete!\n\nFeedback Summary:\n${feedback.overall_feedback}\n\nClick the download button below to get your detailed feedback PDF.`,
+            sender: 'ai',
+            timestamp: new Date()
+          }]);
+          toast.success('Interview completed! Please download your feedback PDF.', {
+            duration: 5000,
+            position: 'bottom-center'
+          });
+        }
       }
     } catch (error) {
       console.error('Error getting next question:', error);
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: 'Sorry, there was an error getting the next question. Please try again.',
         sender: 'ai',
         timestamp: new Date()
       }]);
+      toast.error('Error getting next question. Please try again.');
     } finally {
       setIsAiTyping(false);
     }
+  };
+
+  const generateUniqueId = () => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   const sendMessage = useCallback((content: string, sender: 'user' | 'ai' = 'user') => {
@@ -188,7 +216,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Add the message to the chat
     setMessages(prev => [...prev, {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       content,
       sender,
       timestamp: new Date()
@@ -212,21 +240,28 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [interviewState, interviewType]);
 
-  const downloadTranscript = useCallback(() => {
-    const transcript = messages
-      .map(msg => `[${msg.timestamp.toLocaleString()}] ${msg.sender === 'user' ? 'You' : 'AI'}: ${msg.content}`)
-      .join('\n\n');
+  const downloadTranscript = useCallback(async () => {
+    if (!interviewState.sessionId) return;
 
-    const blob = new Blob([transcript], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `interview-transcript-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [messages]);
+    try {
+      toast.loading('Preparing your feedback PDF...', { id: 'download-pdf' });
+      
+      const pdfBlob = await interviewApi.downloadTranscriptPDF(interviewState.sessionId);
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `interview-transcript-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Feedback PDF downloaded successfully!', { id: 'download-pdf' });
+    } catch (error) {
+      console.error('Error downloading transcript:', error);
+      toast.error('Failed to download feedback PDF. Please try again.', { id: 'download-pdf' });
+    }
+  }, [interviewState.sessionId]);
 
   const value: ChatContextType = {
     messages,

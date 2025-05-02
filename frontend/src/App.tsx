@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import Interview from './components/Interview';
+import { useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import Auth from './components/auth/Auth';
 import Header from './components/Header';
 import ChatWindow from './components/ChatWindow';
@@ -24,6 +24,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="bottom-center" />
       {isAuthenticated ? (
         <>
           <ChatProvider>
