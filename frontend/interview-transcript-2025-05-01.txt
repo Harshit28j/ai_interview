@@ -1,0 +1,5 @@
+[5/2/2025, 2:05:59 AM] AI: Hi there! I'm your AI interview assistant. What type of interview would you like to practice today?
+
+[5/2/2025, 2:06:08 AM] You: Hey how is it going
+
+[5/2/2025, 2:06:11 AM] AI: For HR interviews, focus on your soft skills, cultural fit, and past experiences. Would you like to practice answering a specific question like 'Tell me about yourself' or 'Why do you want to work here?'

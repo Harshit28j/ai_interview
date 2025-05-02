@@ -1,0 +1,59 @@
+# ---- Python/Django ----
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+db.sqlite3
+*.sqlite3
+*.log
+*.pot
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.env.*
+.venv/
+venv/
+ENV/
+env/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+
+# Django specific
+/staticfiles/
+media/
+local_settings.py
+
+# ---- Node/React ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/frontend/build/
+/frontend/dist/
+/frontend/.env
+/frontend/.env.*
+
+# ---- VSCode/IDE ----
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ---- OS/General ----
+Thumbs.db
+.DS_Store
+*.swp
+*.bak
+*.tmp
+
+# ---- Misc ----
+*.orig
+*.rej
